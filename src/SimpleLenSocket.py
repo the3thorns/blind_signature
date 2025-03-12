@@ -1,8 +1,5 @@
-import os
-import sys
 import subprocess as sub
-from socket import socket, AF_INET, SOCK_STREAM
-from threading import Thread
+from socket import socket, AF_INET, SOCK_STREAM, error
 import struct
 
 """
@@ -13,7 +10,7 @@ Message: [H-LEN][PAYLOAD]
 
 class SimpleLenSocket():
 
-    def __init__(self, soc=None):
+    def __init__(self, soc : socket | None =None):
         if soc == None:
             self.soc = socket(AF_INET, SOCK_STREAM)
         else:
@@ -22,34 +19,39 @@ class SimpleLenSocket():
     def connect(self, host: str, port: int):
         self.soc.connect((host, port))
     
-    def send(self, msg: str):
-        payload = msg.encode("utf-8")
-        length = len(payload)
-        header = struct.pack(">I", length)
+    def send(self, msg: int):
+        num_bytes = (msg.bit_length() + 7) // 8
+        payload = msg.to_bytes(length=num_bytes, byteorder="big", signed=False)
+
+        header = struct.pack("!I", num_bytes)
 
         packet = header + payload
-        self.soc.send(packet)
+        try:
+            self.soc.send(packet)
+        except error:
+            print("No se ha podido realizar el envío")
 
-
-    def receive(self): # Returns a hash
+    def receive(self) -> int : # Returns a hash
         header = self.soc.recv(4)
+        length = struct.unpack("!I", header)[0]
 
-        if not header:
-            return None
-        
-        length = struct.unpack(">I", header)[0]
+        bytes_readed = 0
+        payload_parts = []
+        while bytes_readed < length:
+            readed = self.soc.recv(length - bytes_readed)
 
-        payload = b""
-        
-        while len(payload) < length:
-            chunk = self.soc.recv(length - len(payload))
-
-            if not chunk:
+            if not readed: # Se ha cerrado la conexión
                 return None
-            payload += chunk
+
+            bytes_readed += len(readed)
+            payload_parts.append(readed)
         
-        decoded_msg = payload.decode("utf-8")
-        return decoded_msg
+        payload = b''.join(payload_parts)
+
+        num = int.from_bytes(payload, byteorder="big", signed=False)
+        return num
+
+        
     
     def close(self):
         self.soc.close()

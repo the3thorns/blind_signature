@@ -1,4 +1,5 @@
 # blind_signature
+
 A test in python that aims to implement the blind signature algorithm
 
 ## Things to learn
@@ -40,4 +41,27 @@ arguments = sys.argv
 
 ### OpenSSL interaction
 
+Using `subprocess` module
 
+```python
+import subrocess as sub
+
+gen_key_args = ["openssl", "genrsa", "-out", KEY_FILE, "2048"]
+extract_pub_args = ["openssl", "rsa", "-in", KEY_FILE, "-outform", "PEM", "-pubout", "-out", PUBLIC_KEY_FILE]
+
+sub.call(gen_key_args)
+sub.call(extract_pub_args)
+```
+
+## Algorithm development
+
+The client needs the following parameters at the beginning:
+
+* RSA n parameter (public)
+* RSA e parameter (public)
+* Hash h (private)
+
+The issuer needs the following parameters at the end
+
+* RSA d parameter (private)
+* RSA e parameter (public)
