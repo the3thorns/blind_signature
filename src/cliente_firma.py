@@ -8,8 +8,7 @@ from SimpleLenSocket import *
 
 # Crypto imports
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 
 def load_public_key(path):
     with open(path, "rb") as file:
@@ -23,6 +22,15 @@ def load_public_numbers(public_key):
     params["e"] = public_numbers.e
 
     return params
+
+
+def digest_file(original_file) -> bytes:
+
+    with open(original_file, "rb") as file:
+        digest = hashes.Hash(hashes.SHA256())
+        digest.update(file.read())
+
+    return digest.finalize()
 
 """
 Blind signature protocol funcions
@@ -38,7 +46,7 @@ if __name__ == "__main__":
     public_key = load_public_key(PUBLIC_KEY_FILE)
     rsa_params = load_public_numbers(public_key)
 
-    hash = 12345678
+    hash = int.from_bytes(digest_file(ORIGINAL_FILE))
 
     s = SimpleLenSocket()
     s.connect(SERVER_ADDRESS, SERVER_PORT)

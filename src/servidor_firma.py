@@ -1,3 +1,4 @@
+from http import client, server
 import os
 import sys
 from pathlib import Path
@@ -87,3 +88,10 @@ Blind signature protocol functions
 """
 
 
+server_socket = socket(AF_INET, SOCK_STREAM)
+server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
+server_socket.listen()
+
+while True:
+    client_socket = SimpleLenSocket( server_socket.accept()[0] )
+    print( client_socket.receive() )
