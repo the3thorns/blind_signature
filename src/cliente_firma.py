@@ -16,19 +16,35 @@ def load_public_key(path):
         public_key = serialization.load_pem_public_key(file.read())
     return public_key
 
-public_key = load_public_key(PUBLIC_KEY_FILE)
-public_numbers = public_key.public_numbers()
+def load_public_numbers(public_key):
+    public_numbers = public_key.public_numbers()
+    params = {}
+    params["n"] = public_numbers.n
+    params["e"] = public_numbers.e
 
-RSA_n = public_numbers.n
-RSA_e = public_numbers.e
+    return params
 
-hash = 12345678
+"""
+Blind signature protocol funcions
+"""
 
-s = SimpleLenSocket()
-s.connect(SERVER_ADDRESS, SERVER_PORT)
+def blinding_function(hash, k, rsa_params):
+    return (pow(k, rsa_params["e"], rsa_params["n"]) * (hash % rsa_params["n"])) % rsa_params["n"]
 
-k = int(random.uniform(0, 10000))
-A = (pow(k, RSA_e, RSA_n) * (hash % RSA_n)) % RSA_n
-print(A)
+def deblinding_function(blinded_hash, k, rsa_params):
+    pass
 
-s.send(A)
+if __name__ == "__main__":
+    public_key = load_public_key(PUBLIC_KEY_FILE)
+    rsa_params = load_public_numbers(public_key)
+
+    hash = 12345678
+
+    s = SimpleLenSocket()
+    s.connect(SERVER_ADDRESS, SERVER_PORT)
+
+    k = int(random.uniform(0, 10000))
+    A = (pow(k, rsa_params["e"], rsa_params["n"]) * (hash % rsa_params["n"])) % rsa_params["n"]
+
+    print(A)
+    s.send(A)

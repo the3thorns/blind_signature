@@ -9,17 +9,44 @@ from defs import *
 
 # Crypto
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
-def generate_rsa_keys():
+
+def openssl_gen_rsa_keys():
     gen_key_args = ["openssl", "genrsa", "-out", KEY_FILE, "2048"]
     extract_pub_args = ["openssl", "rsa", "-in", KEY_FILE, "-outform", "PEM", "-pubout", "-out", PUBLIC_KEY_FILE]
 
     sub.call(gen_key_args)
     sub.call(extract_pub_args)
 
+def crypto_gen_rsa_keys():
+    private_key = rsa.generate_private_key (
+        public_exponent=65537,
+        key_size=2048
+    )
+    public_key = private_key.public_key()
+
+    # Dump rsa keys
+
+    with open(KEY_FILE, "wb") as privkfile:
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        privkfile.write(private_pem)
+    
+    with open(PUBLIC_KEY_FILE, "wb") as pubkfile:
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        pubkfile.write(public_pem)
+
+
 def check_keys():
     if not Path(KEY_FILE).exists() or not Path(PUBLIC_KEY_FILE).exists():
-        generate_rsa_keys()
+        openssl_gen_rsa_keys()
     
 def load_private_key_params(private_key, public_key):
     with open(private_key, "rb") as file:
@@ -42,7 +69,7 @@ def load_private_key_params(private_key, public_key):
     return params
 
 
-def clean():
+def remove_files():
     
     for file_name in FILES:
         try:
@@ -55,21 +82,8 @@ def clean():
             print("An error ocurred during cleanup")
 
 
-def start_blind_signature_process(soc: SimpleLenSocket):
-    num = soc.receive()
-    soc.close()
-    print(num)
+"""
+Blind signature protocol functions
+"""
 
 
-check_keys()
-
-# Extract RSA params
-key_params = load_private_key_params(KEY_FILE, PUBLIC_KEY_FILE)
-
-socket_server = socket(AF_INET, SOCK_STREAM)
-socket_server.bind((SERVER_ADDRESS, SERVER_PORT))
-socket_server.listen()
-
-while True:
-    client_socket = SimpleLenSocket( socket_server.accept()[0] )
-    start_blind_signature_process(client_socket)
