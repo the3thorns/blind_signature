@@ -9,8 +9,9 @@ from SimpleLenSocket import *
 from defs import *
 
 # Crypto
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.exceptions import InvalidSignature
 
 
 def openssl_gen_rsa_keys():
@@ -44,19 +45,15 @@ def crypto_gen_rsa_keys():
         )
         pubkfile.write(public_pem)
 
-
-def check_keys():
-    if not Path(KEY_FILE).exists() or not Path(PUBLIC_KEY_FILE).exists():
-        openssl_gen_rsa_keys()
     
-def load_private_key_params(private_key, public_key):
-    with open(private_key, "rb") as file:
+def load_private_key_params(path_priv, path_pub):
+    with open(path_priv, "rb") as file:
         private_key = serialization.load_pem_private_key(
             file.read(),
             password=None
         )
     
-    with open(public_key, "rb") as file:
+    with open(path_pub, "rb") as file:
         public_key = serialization.load_pem_public_key(file.read())
 
     private_numbers = private_key.private_numbers()
@@ -67,7 +64,7 @@ def load_private_key_params(private_key, public_key):
     params["e"] = public_numbers.e
     params["n"] = public_numbers.n
 
-    return params
+    return private_key, public_key, params
 
 
 def remove_files():
@@ -83,10 +80,37 @@ def remove_files():
             print("An error ocurred during cleanup")
 
 
-"""
-Blind signature protocol functions
-"""
+def sign_message(private_key, message):
+    signature = private_key.sign(
+        message,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
 
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+
+    return signature
+
+def verificate_signature(public_key, message, signature) -> bool:
+    try:
+        public_key.verify(
+            signature,
+            message,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
+    except InvalidSignature:
+        return False
+
+crypto_gen_rsa_keys()
+
+private_key, public_key, params = load_private_key_params(KEY_FILE, PUBLIC_KEY_FILE)
 
 server_socket = socket(AF_INET, SOCK_STREAM)
 server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
@@ -94,4 +118,10 @@ server_socket.listen()
 
 while True:
     client_socket = SimpleLenSocket( server_socket.accept()[0] )
-    print( client_socket.receive() )
+    blinded_message = client_socket.receive_bytes()
+    blinded_signature = sign_message(private_key, blinded_message)
+
+    if not verificate_signature(public_key, blinded_message, blinded_signature):
+        print("La firma no es correcta")
+    else:
+        print("La firma es correcta")

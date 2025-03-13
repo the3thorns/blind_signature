@@ -52,7 +52,5 @@ if __name__ == "__main__":
     s.connect(SERVER_ADDRESS, SERVER_PORT)
 
     k = int(random.uniform(0, 10000))
-    A = (pow(k, rsa_params["e"], rsa_params["n"]) * (hash % rsa_params["n"])) % rsa_params["n"]
-
-    print(A)
-    s.send(A)
+    A = blinding_function(hash, k, rsa_params)
+    s.send_int(A)
