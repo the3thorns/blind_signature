@@ -1,16 +1,28 @@
 from operator import inv
-import os
-import sys
-import subprocess as sub
-from socket import socket, AF_INET, gethostname
+from socket import gethostname
 import random
-from defs import *
 from SimpleLenSocket import *
+import sys
 
 # Crypto imports
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+
+
+"""
+Server defs
+"""
+SERVER_ADDRESS = gethostname()
+SERVER_PORT = 12345
+
+def get_arguments():
+    argc = len(sys.argv)
+    if argc != 3:
+        sys.exit(-1)
+    
+    return sys.argv[1], sys.argv[2]
+
 
 
 def load_public_key(path):
@@ -66,7 +78,10 @@ def deblining_function(blind_sign, inverse_k, n):
     return (blind_sign * inverse_k) % n
 
 
+
 if __name__ == "__main__":
+    ORIGINAL_FILE, PUBLIC_KEY_FILE = get_arguments()
+    
     public_key = load_public_key(PUBLIC_KEY_FILE) # Carga la clave pública del servidor
     rsa_params = load_public_numbers(public_key) # Carga los miembros públicos de la clave
 

@@ -1,27 +1,33 @@
-from http import client, server
 import os
-import sys
-from pathlib import Path
 import subprocess as sub
 from socket import socket, AF_INET, gethostname
-from threading import Thread
 from SimpleLenSocket import *
-from defs import *
+# from defs import *
 
 # Crypto
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.exceptions import InvalidSignature
 
+"""
+File defs
+"""
+SERVER_ADDRESS = gethostname()
+SERVER_PORT = 12345
+KEY_FILE = "server_key"
+PUBLIC_KEY_FILE = f"{KEY_FILE}.pub"
+FILES = [KEY_FILE, PUBLIC_KEY_FILE]
 
+"""
 def openssl_gen_rsa_keys():
     gen_key_args = ["openssl", "genrsa", "-out", KEY_FILE, "2048"]
     extract_pub_args = ["openssl", "rsa", "-in", KEY_FILE, "-outform", "PEM", "-pubout", "-out", PUBLIC_KEY_FILE]
 
     sub.call(gen_key_args)
     sub.call(extract_pub_args)
+"""
 
-def crypto_gen_rsa_keys():
+def rsa_keygen():
     private_key = rsa.generate_private_key (
         public_exponent=65537,
         key_size=2048
@@ -110,7 +116,7 @@ def verificate_signature(public_key, message, signature) -> bool:
 
 
 if __name__ == "__main__":
-    crypto_gen_rsa_keys()
+    rsa_keygen()
 
     private_key, public_key, params = load_private_key_params(KEY_FILE, PUBLIC_KEY_FILE)
 
