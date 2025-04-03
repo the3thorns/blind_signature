@@ -108,20 +108,25 @@ def verificate_signature(public_key, message, signature) -> bool:
     except InvalidSignature:
         return False
 
-crypto_gen_rsa_keys()
 
-private_key, public_key, params = load_private_key_params(KEY_FILE, PUBLIC_KEY_FILE)
+if __name__ == "__main__":
+    crypto_gen_rsa_keys()
 
-server_socket = socket(AF_INET, SOCK_STREAM)
-server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
-server_socket.listen()
+    private_key, public_key, params = load_private_key_params(KEY_FILE, PUBLIC_KEY_FILE)
 
-while True:
-    client_socket = SimpleLenSocket( server_socket.accept()[0] )
-    blinded_message = client_socket.receive_bytes()
-    blinded_signature = sign_message(private_key, blinded_message)
+    server_socket = socket(AF_INET, SOCK_STREAM)
+    server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
+    server_socket.listen()
 
-    if not verificate_signature(public_key, blinded_message, blinded_signature):
-        print("La firma no es correcta")
-    else:
-        print("La firma es correcta")
+    while True:
+        client_socket = SimpleLenSocket( server_socket.accept()[0] )
+        blinded_message = client_socket.receive_bytes()
+        blinded_signature = sign_message(private_key, blinded_message)
+
+        if not verificate_signature(public_key, blinded_message, blinded_signature):
+            print("La firma no es correcta")
+        else:
+            print("La firma es correcta")
+
+        client_socket.send_bytes(blinded_signature)
+        client_socket.close()

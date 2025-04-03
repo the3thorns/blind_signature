@@ -3,9 +3,7 @@ from socket import socket, AF_INET, SOCK_STREAM, error
 import struct
 
 """
-Protocol: SimpleLen
-
-Message: [H-LEN][PAYLOAD]
+This socket stream was designed to send unsigned integers
 """
 
 class SimpleLenSocket():
@@ -61,7 +59,7 @@ class SimpleLenSocket():
     def receive_bytes(self) -> bytes:
         return self._receive()
 
-    def receive_int(self) -> bytes : # Returns a hash
+    def receive_int(self) -> int : # Returns a hash
         payload = self._receive()
         num = int.from_bytes(payload, byteorder="big", signed=False)
         return num

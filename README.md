@@ -117,3 +117,4 @@ sig = Finalize(pk, input_msg, blind_sig, inv)
 
 * Original Chaum paper: <http://www.hit.bme.hu/~buttyan/courses/BMEVIHIM219/2009/Chaum.BlindSigForPayment.1982.PDF>
 * RSA blind signature protocol: <https://www.rfc-editor.org/rfc/rfc9474.html#name-blind-signature-protocol>
+* Python Cryptography documentation: <https://cryptography.io/en/latest/>
