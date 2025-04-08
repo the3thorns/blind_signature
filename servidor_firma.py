@@ -86,18 +86,8 @@ def remove_files():
             print("An error ocurred during cleanup")
 
 
-def sign_message(private_key, message):
-    signature = private_key.sign(
-        message,
-        padding.PSS(
-            mgf=padding.MGF1(hashes.SHA256()),
-
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        hashes.SHA256()
-    )
-
-    return signature
+def sign_message(n, d, message):
+    return pow(message, d, n)
 
 def verificate_signature(public_key, message, signature) -> bool:
     try:
@@ -126,13 +116,8 @@ if __name__ == "__main__":
 
     while True:
         client_socket = SimpleLenSocket( server_socket.accept()[0] )
-        blinded_message = client_socket.receive_bytes()
-        blinded_signature = sign_message(private_key, blinded_message)
+        blinded_message = client_socket.receive_int()
+        blinded_signature = sign_message(params["n"], params["d"], blinded_message)
 
-        if not verificate_signature(public_key, blinded_message, blinded_signature):
-            print("La firma no es correcta")
-        else:
-            print("La firma es correcta")
-
-        client_socket.send_bytes(blinded_signature)
+        client_socket.send_int(blinded_signature)
         client_socket.close()

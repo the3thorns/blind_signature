@@ -74,7 +74,7 @@ Blind signature protocol funcions
 def blinding_function(hash, k, rsa_params) -> int:
     return (pow(k, rsa_params["e"], rsa_params["n"]) * (hash % rsa_params["n"])) % rsa_params["n"] # Se realiza la operación de esta forma para trabajar con números grandes
 
-def deblining_function(blind_sign, inverse_k, n):
+def deblining_function(blind_sign, inverse_k, n) -> int:
     return (blind_sign * inverse_k) % n
 
 
@@ -99,8 +99,9 @@ if __name__ == "__main__":
     """
 
     blind_sig = s.receive_int() # Firma cegada
-
+    s.close()
+    
     inverse =  modular_inverse(k ,rsa_params["n"])
     signature = deblining_function(blind_sig, inverse, rsa_params["n"])
 
-    print(signature)
+    print(signature, end=None)
