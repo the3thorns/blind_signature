@@ -18,14 +18,6 @@ KEY_FILE = "server_key"
 PUBLIC_KEY_FILE = f"{KEY_FILE}.pub"
 FILES = [KEY_FILE, PUBLIC_KEY_FILE]
 
-"""
-def openssl_gen_rsa_keys():
-    gen_key_args = ["openssl", "genrsa", "-out", KEY_FILE, "2048"]
-    extract_pub_args = ["openssl", "rsa", "-in", KEY_FILE, "-outform", "PEM", "-pubout", "-out", PUBLIC_KEY_FILE]
-
-    sub.call(gen_key_args)
-    sub.call(extract_pub_args)
-"""
 
 def rsa_keygen():
     private_key = rsa.generate_private_key (
@@ -52,7 +44,7 @@ def rsa_keygen():
         pubkfile.write(public_pem)
 
     
-def load_private_key_params(path_priv, path_pub):
+def load_rsa_keys(path_priv, path_pub):
     with open(path_priv, "rb") as file:
         private_key = serialization.load_pem_private_key(
             file.read(),
@@ -62,15 +54,7 @@ def load_private_key_params(path_priv, path_pub):
     with open(path_pub, "rb") as file:
         public_key = serialization.load_pem_public_key(file.read())
 
-    private_numbers = private_key.private_numbers()
-    public_numbers = public_key.public_numbers()
-    params = {}
-    
-    params["d"] = private_numbers.d
-    params["e"] = public_numbers.e
-    params["n"] = public_numbers.n
-
-    return private_key, public_key, params
+    return private_key, public_key
 
 
 def remove_files():
@@ -106,18 +90,18 @@ def verificate_signature(public_key, message, signature) -> bool:
 
 
 if __name__ == "__main__":
+    remove_files()
     rsa_keygen()
-
-    private_key, public_key, params = load_private_key_params(KEY_FILE, PUBLIC_KEY_FILE)
 
     server_socket = socket(AF_INET, SOCK_STREAM)
     server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
     server_socket.listen()
+    print(f"Server listening at {SERVER_ADDRESS}:{SERVER_PORT}")
 
     while True:
-        client_socket = SimpleLenSocket( server_socket.accept()[0] )
-        blinded_message = client_socket.receive_int()
-        blinded_signature = sign_message(params["n"], params["d"], blinded_message)
+        accepted_socket, _a = server_socket.accept()
+        connection_socket = SimpleLenSocket(accepted_socket)
+        print("== NEW SESSION STARTED ==")
 
-        client_socket.send_int(blinded_signature)
-        client_socket.close()
+        connection_socket.close()
+        print("== SESSION ENDED ==")

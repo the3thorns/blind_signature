@@ -25,23 +25,16 @@ def get_arguments():
 
 
 
-def load_public_key(path):
+def load_public_key(path: str):
     with open(path, "rb") as file:
         public_key = serialization.load_pem_public_key(file.read())
     return public_key
 
-def load_public_numbers(public_key):
-    public_numbers = public_key.public_numbers()
-    params = {}
-    params["n"] = public_numbers.n
-    params["e"] = public_numbers.e
-
-    return params
 
 
-def hash_file(original_file) -> bytes:
+def hash_file(path_original_file) -> bytes:
 
-    with open(original_file, "rb") as file:
+    with open(path_original_file, "rb") as file:
         digest = hashes.Hash(hashes.SHA256())
         digest.update(file.read())
 
@@ -71,8 +64,8 @@ def modular_inverse(a, m):
 Blind signature protocol funcions
 """
 
-def blinding_function(hash, k, rsa_params) -> int:
-    return (pow(k, rsa_params["e"], rsa_params["n"]) * (hash % rsa_params["n"])) % rsa_params["n"] # Se realiza la operación de esta forma para trabajar con números grandes
+def blinding_function(hash, k, n, e) -> int:
+    return (pow(k, e, n) * (hash % n)) % n # Se realiza la operación de esta forma para trabajar con números grandes
 
 def deblining_function(blind_sign, inverse_k, n) -> int:
     return (blind_sign * inverse_k) % n
@@ -80,28 +73,21 @@ def deblining_function(blind_sign, inverse_k, n) -> int:
 
 
 if __name__ == "__main__":
-    ORIGINAL_FILE, PUBLIC_KEY_FILE = get_arguments()
-    
-    public_key = load_public_key(PUBLIC_KEY_FILE) # Carga la clave pública del servidor
-    rsa_params = load_public_numbers(public_key) # Carga los miembros públicos de la clave
+    path_fichero_original, path_public_key = get_arguments()
+    public_key = load_public_key(path_public_key)
 
-    hash = int.from_bytes(hash_file(ORIGINAL_FILE)) # Genera el hash a firmar
+    public_numbers = public_key.public_numbers()
+    e = public_numbers.e
+    n = public_numbers.n
 
-    s = SimpleLenSocket()
-    s.connect(SERVER_ADDRESS, SERVER_PORT)
+    hash = int.from_bytes(hash_file(path_fichero_original))
 
-    k = int(random.uniform(0, 10000)) # Factor de opacidad
-    A = blinding_function(hash, k, rsa_params)
-    s.send_int(A)
+    k = random.randint(0, 1000000)
+    blinded_hash = blinding_function(hash, k, n, e)
 
-    """
-    The server will perform the signature process and send back an integer
-    """
+    connection_socket = SimpleLenSocket()
+    connection_socket.connect(SERVER_ADDRESS, SERVER_PORT)
 
-    blind_sig = s.receive_int() # Firma cegada
-    s.close()
-    
-    inverse =  modular_inverse(k ,rsa_params["n"])
-    signature = deblining_function(blind_sig, inverse, rsa_params["n"])
 
-    print(signature, end=None)
+
+    connection_socket.close()
