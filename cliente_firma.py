@@ -97,4 +97,7 @@ if __name__ == "__main__":
     connection_socket.close()
     
     deblinded_signature = deblining_function(blinded_signature, k, n)
-    print(deblinded_signature, end="")
+    num_bytes = (deblinded_signature.bit_length() + 7) // 8
+    db_bytes = deblinded_signature.to_bytes(num_bytes, byteorder='big')
+    hex_string = ':'.join(format(x, '02X') for x in db_bytes)
+    print(hex_string, end="")

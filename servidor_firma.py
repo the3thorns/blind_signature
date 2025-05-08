@@ -6,10 +6,9 @@ from SimpleLenSocket import *
 # from defs import *
 
 # Crypto
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes, PublicKeyTypes
-from cryptography.exceptions import InvalidSignature
 
 """
 File defs
@@ -74,6 +73,7 @@ def remove_files():
 
 def sign_message(n, d, message) -> int:
     return pow(message, d, n)
+
 
 if __name__ == "__main__":
     remove_files()

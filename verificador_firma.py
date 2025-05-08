@@ -3,7 +3,6 @@ import sys
 from cryptography.hazmat.primitives import serialization, hashes
 
 def hash_file(original_file) -> bytes:
-
     with open(original_file, "rb") as file:
         digest = hashes.Hash(hashes.SHA256())
         digest.update(file.read())
@@ -20,7 +19,11 @@ def get_arguments():
         sys.exit(-1)
     
     with open(sys.argv[2], "r") as signature_file:
-        int_sig = int(signature_file.read())
+        hex_string = str(signature_file.read())
+        byte_strings = hex_string.split(':')
+        byte_values = [int(byte, 16) for byte in byte_strings]
+        byte_array = bytes(byte_values)
+        int_sig = int.from_bytes(byte_array, byteorder='big')
         signature = int_sig
     
     # Read public key
