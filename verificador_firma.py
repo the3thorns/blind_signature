@@ -1,9 +1,6 @@
-from hmac import digest
 import sys
 
 from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.exceptions import InvalidSignature
 
 def hash_file(original_file) -> bytes:
 
@@ -17,7 +14,7 @@ def hash_file(original_file) -> bytes:
 def get_arguments():
     argc = len(sys.argv)
 
-    hash = hash_file(sys.argv[1])
+    hash = int.from_bytes(hash_file(sys.argv[1]))
 
     if argc != 4:
         sys.exit(-1)
@@ -25,14 +22,6 @@ def get_arguments():
     with open(sys.argv[2], "r") as signature_file:
         int_sig = int(signature_file.read())
         signature = int_sig
-        #signature = int_sig.to_bytes(
-        #    length=2048//8,
-        #    byteorder='little'
-        #)
-
-        #d = hashes.Hash(hashes.SHA256())
-        #d.update(signature)
-        #signature = d.finalize()
     
     # Read public key
     
@@ -47,9 +36,8 @@ def verificate_signature(public_key, hash, signature) -> bool:
     n = public_members.n
     e = public_members.e
 
-    mensaje_recuperado = pow(signature, e, n)
-
-    return hash == mensaje_recuperado
+    hash_recuperado = pow(signature, e, n)
+    return hash == hash_recuperado
 
 if __name__ == "__main__":
     hash, signature, public_key = get_arguments()

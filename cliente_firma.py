@@ -1,4 +1,4 @@
-from operator import inv
+from operator import inv, invert
 from socket import gethostname
 import random
 from SimpleLenSocket import *
@@ -44,30 +44,31 @@ def hash_file(path_original_file) -> bytes:
 Modular arithmetic functions
 """
 
-def extended_gcd(a, b):
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
 
-    if a == 0:
-        return (b, 0, 1)
-    else:
-        gcd, x, y = extended_gcd(b % a, a)
-        return (gcd, y - (b // a) * x, x)
-
-def modular_inverse(a, m):
-
-    gcd, x, y = extended_gcd(a, m)
-    if gcd != 1:
-        return None  # a y m no son coprimos, el inverso no existe
-    else:
-        return x % m  # Asegura que el resultado sea positivo
+def mod_inverse(a, m):
+    m0, x0, x1 = m, 0, 1
+    while a > 1:
+        q = a // m
+        m, a = a % m, m
+        x0, x1 = x1 - q * x0, x0
+    if x1 < 0:
+        x1 += m0
+    return x1
 
 """
 Blind signature protocol funcions
 """
 
 def blinding_function(hash, k, n, e) -> int:
+    
     return (pow(k, e, n) * (hash % n)) % n # Se realiza la operación de esta forma para trabajar con números grandes
 
-def deblining_function(blind_sign, inverse_k, n) -> int:
+def deblining_function(blind_sign, k, n) -> int:
+    inverse_k = mod_inverse(k, n)
     return (blind_sign * inverse_k) % n
 
 
@@ -82,12 +83,18 @@ if __name__ == "__main__":
 
     hash = int.from_bytes(hash_file(path_fichero_original))
 
-    k = random.randint(0, 1000000)
+    k = random.randint(1, n - 1)
+    while gcd(k, n) != 1:
+        r = random.randint(1, n-1)
+
     blinded_hash = blinding_function(hash, k, n, e)
 
     connection_socket = SimpleLenSocket()
     connection_socket.connect(SERVER_ADDRESS, SERVER_PORT)
+    connection_socket.send_int(blinded_hash)
 
-
-
+    blinded_signature = connection_socket.receive_int()
     connection_socket.close()
+    
+    deblinded_signature = deblining_function(blinded_signature, k, n)
+    print(deblinded_signature, end="")

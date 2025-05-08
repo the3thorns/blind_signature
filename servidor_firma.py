@@ -1,3 +1,4 @@
+from hashlib import sha256
 import os
 import subprocess as sub
 from socket import socket, AF_INET, gethostname
@@ -6,7 +7,8 @@ from SimpleLenSocket import *
 
 # Crypto
 from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
+from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes, PublicKeyTypes
 from cryptography.exceptions import InvalidSignature
 
 """
@@ -44,7 +46,7 @@ def rsa_keygen():
         pubkfile.write(public_pem)
 
     
-def load_rsa_keys(path_priv, path_pub):
+def load_rsa_keys(path_priv, path_pub) -> tuple[PrivateKeyTypes, PublicKeyTypes]:
     with open(path_priv, "rb") as file:
         private_key = serialization.load_pem_private_key(
             file.read(),
@@ -70,28 +72,21 @@ def remove_files():
             print("An error ocurred during cleanup")
 
 
-def sign_message(n, d, message):
+def sign_message(n, d, message) -> int:
     return pow(message, d, n)
-
-def verificate_signature(public_key, message, signature) -> bool:
-    try:
-        public_key.verify(
-            signature,
-            message,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
-        return True
-    except InvalidSignature:
-        return False
-
 
 if __name__ == "__main__":
     remove_files()
     rsa_keygen()
+    private_key, public_key = load_rsa_keys(KEY_FILE, PUBLIC_KEY_FILE)
+
+    private_numbers = private_key.private_numbers()
+    public_numbers = public_key.public_numbers()
+
+    n = public_numbers.n
+    e = public_numbers.e
+    d = private_numbers.d
+    p = private_numbers.p
 
     server_socket = socket(AF_INET, SOCK_STREAM)
     server_socket.bind((SERVER_ADDRESS, SERVER_PORT))
@@ -102,6 +97,11 @@ if __name__ == "__main__":
         accepted_socket, _a = server_socket.accept()
         connection_socket = SimpleLenSocket(accepted_socket)
         print("== NEW SESSION STARTED ==")
+        blinded_message = connection_socket.receive_int()
+
+        blinded_signature = sign_message(n, d, blinded_message)
+
+        connection_socket.send_int(blinded_signature)
 
         connection_socket.close()
         print("== SESSION ENDED ==")
